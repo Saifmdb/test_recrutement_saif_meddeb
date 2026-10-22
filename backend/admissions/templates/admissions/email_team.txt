@@ -1,0 +1,18 @@
+Nouvelle demande d'inscription reçue via l'assistant conversationnel.
+
+Référence : {{ c.reference }}
+Statut    : {{ c.statut }}
+Date      : {{ c.created_at|date:"d/m/Y H:i" }}
+
+PROSPECT
+  Prénom    : {{ c.prenom }}
+  Nom       : {{ c.nom }}
+  E-mail    : {{ c.email }}
+  Téléphone : {{ c.telephone }}
+
+FORMATION DEMANDÉE
+  Diplôme    : {{ f.diplome }}
+  Spécialité : {{ f.specialite }}
+  École      : {{ f.ecole }}
+
+La décision d'admission appartient à l'équipe admissions.

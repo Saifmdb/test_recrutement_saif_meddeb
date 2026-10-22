@@ -1,0 +1,16 @@
+# Python / Django
+backend/.venv/
+__pycache__/
+*.pyc
+backend/db.sqlite3
+backend/.env
+backend/sent_emails/
+
+# Angular
+front/node_modules/
+front/dist/
+front/.angular/
+
+# OS / IDE
+.DS_Store
+Thumbs.db

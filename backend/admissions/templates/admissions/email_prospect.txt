@@ -1,0 +1,12 @@
+Bonjour {{ c.prenom }},
+
+Nous avons bien reçu votre demande d'inscription (référence {{ c.reference }}) pour :
+  {{ f.diplome }} — {{ f.specialite }} ({{ f.ecole }})
+
+Votre demande est enregistrée avec le statut « {{ c.statut }} ». L'équipe admissions va l'étudier
+et reviendra vers vous par e-mail ou par téléphone.
+
+Important : cette demande ne vaut pas admission. La décision finale appartient à l'équipe admissions.
+
+Cordialement,
+Le service des admissions

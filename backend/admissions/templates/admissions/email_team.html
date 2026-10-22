@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr">
+<body style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;background:#f3f4f6;padding:24px">
+  <table role="presentation" style="max-width:600px;margin:auto;background:#fff;border-radius:8px;padding:24px" width="100%">
+    <tr><td>
+      <h2 style="margin:0 0 4px;color:#1e3a8a">Nouvelle demande d'inscription</h2>
+      <p style="margin:0 0 16px;color:#6b7280">Reçue via l'assistant conversationnel — {{ c.created_at|date:"d/m/Y H:i" }}</p>
+      <p><strong>Référence :</strong> {{ c.reference }} &nbsp;|&nbsp; <strong>Statut :</strong> {{ c.statut }}</p>
+      <h3 style="color:#1e3a8a;border-bottom:1px solid #e5e7eb;padding-bottom:4px">Prospect</h3>
+      <p>{{ c.prenom }} {{ c.nom }}<br>
+        <a href="mailto:{{ c.email }}">{{ c.email }}</a><br>
+        {{ c.telephone }}</p>
+      <h3 style="color:#1e3a8a;border-bottom:1px solid #e5e7eb;padding-bottom:4px">Formation demandée</h3>
+      <p><strong>{{ f.diplome }}</strong><br>{{ f.specialite }}<br>{{ f.ecole }}</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:24px">La décision d'admission appartient à l'équipe admissions.</p>
+    </td></tr>
+  </table>
+</body>
+</html>
