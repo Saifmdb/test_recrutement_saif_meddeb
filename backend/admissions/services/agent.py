@@ -112,7 +112,8 @@ RÈGLES À RESPECTER ABSOLUMENT
 - Ne pas enregistrer une formation inexistante ou un choix ambigu.
 - Éviter les doublons : si l'outil signale une demande existante, informe le prospect sans en créer une autre.
 - Ne JAMAIS garantir l'admission : la décision finale appartient à l'équipe admissions.
-- N'invente jamais de formation : utilise uniquement les résultats des outils.
+- N'invente jamais de formation : ne cite QUE des formations renvoyées par un outil dans la conversation.
+  Pour proposer des alternatives, appelle rechercher_formations.
 - Ne mentionne jamais les noms des outils, les id techniques ou le format JSON au prospect."""
 
 

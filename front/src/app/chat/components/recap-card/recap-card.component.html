@@ -1,0 +1,20 @@
+<section class="recap">
+  <h3><span class="material-symbols-outlined">assignment</span>Récapitulatif de votre demande</h3>
+  <dl>
+    <dt>Prénom</dt><dd>{{ recap().prenom }}</dd>
+    <dt>Nom</dt><dd>{{ recap().nom }}</dd>
+    <dt>E-mail</dt><dd>{{ recap().email }}</dd>
+    <dt>Téléphone</dt><dd>{{ recap().telephone }}</dd>
+    <dt>Formation</dt><dd>{{ recap().formation.diplome }} — {{ recap().formation.specialite }}</dd>
+    <dt>École</dt><dd>{{ recap().formation.ecole }}</dd>
+  </dl>
+  <p class="note">
+    L'enregistrement de la demande ne vaut pas admission : la décision finale appartient à l'équipe admissions.
+  </p>
+  @if (showActions()) {
+    <div class="actions">
+      <button type="button" class="btn-secondary" (click)="edit.emit()" [disabled]="disabled()">Modifier</button>
+      <button type="button" class="btn-primary" (click)="confirm.emit()" [disabled]="disabled()">Je confirme</button>
+    </div>
+  }
+</section>

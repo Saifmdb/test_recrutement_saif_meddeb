@@ -1,0 +1,11 @@
+<details class="sources">
+  <summary class="label-sm">
+    <span class="material-symbols-outlined">description</span>Sources ({{ sources().length }})
+  </summary>
+  @for (s of sources(); track s.ref) {
+    <blockquote>
+      <span class="label-sm">[{{ s.ref }}] {{ s.document }}</span>
+      <span>{{ s.extrait }}</span>
+    </blockquote>
+  }
+</details>

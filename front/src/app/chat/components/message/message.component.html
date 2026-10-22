@@ -1,0 +1,50 @@
+@let m = message();
+<div class="msg" [class.user]="m.role === 'user'">
+  <span class="label-sm who">{{ m.role === 'user' ? 'Vous' : 'Assistant Admission' }}</span>
+
+  @if (m.text) {
+    @if (m.role === 'user') {
+      <div class="bubble user-bubble">{{ m.text }}</div>
+    } @else {
+      <div class="bubble rich" [class.error]="m.error" [innerHTML]="m.text | formatText"></div>
+    }
+  }
+
+  @if (m.payload?.cards; as cards) {
+    @if (cards.length) {
+      <div class="cards">
+        @for (f of cards; track f.id) {
+          <app-formation-card
+            [formation]="f"
+            [disabled]="disabled()"
+            (register)="register($event)"
+            (checkEligibility)="checkEligibility($event)"
+          />
+        }
+      </div>
+    }
+  }
+
+  @if (m.payload?.recap; as recap) {
+    <app-recap-card
+      [recap]="recap"
+      [showActions]="isLast()"
+      [disabled]="disabled()"
+      (confirm)="send.emit('Oui, je confirme')"
+      (edit)="send.emit('Je souhaite modifier ma demande')"
+    />
+  }
+
+  @if (m.payload?.confirmation; as c) {
+    <div class="success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>Demande enregistrée — référence <strong>{{ c.reference }}</strong> · statut « {{ c.statut }} »</span>
+    </div>
+  }
+
+  @if (m.payload?.sources; as sources) {
+    @if (sources.length) {
+      <app-sources-list [sources]="sources" />
+    }
+  }
+</div>

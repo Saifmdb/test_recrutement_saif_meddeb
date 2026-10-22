@@ -1,0 +1,14 @@
+<div class="msg">
+  <span class="label-sm who">Assistant Admission</span>
+  <div class="bubble">
+    Bonjour. Je suis à votre disposition pour vous renseigner sur nos formations, nos critères d'éligibilité et
+    les étapes pour déposer votre candidature. Comment puis-je vous aider aujourd'hui ?
+  </div>
+  @if (showSuggestions()) {
+    <div class="chips">
+      @for (s of suggestions; track s) {
+        <button type="button" class="chip" (click)="pick.emit(s)">{{ s }}</button>
+      }
+    </div>
+  }
+</div>

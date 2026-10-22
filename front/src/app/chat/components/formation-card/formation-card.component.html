@@ -1,0 +1,21 @@
+<article class="card">
+  <span class="badge label-sm">{{ formation().diplome }}</span>
+  <h3>{{ formation().specialite }}</h3>
+  <p class="school">
+    <span class="material-symbols-outlined">location_on</span>{{ formation().ecole }}
+  </p>
+  <dl>
+    @for (c of criteria(); track c.label) {
+      <dt>{{ c.label }}</dt>
+      <dd>{{ c.value }}</dd>
+    }
+  </dl>
+  <div class="actions">
+    <button type="button" class="btn-secondary" (click)="checkEligibility.emit(formation())" [disabled]="disabled()">
+      Mon éligibilité
+    </button>
+    <button type="button" class="btn-primary" (click)="register.emit(formation())" [disabled]="disabled()">
+      S'inscrire
+    </button>
+  </div>
+</article>

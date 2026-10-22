@@ -1,0 +1,12 @@
+:host { display: block; }
+.card { height: 100%; background: var(--surface-container); border: 1px solid var(--surface-high); border-radius: 1rem; padding: var(--space-md); display: flex; flex-direction: column; gap: .375rem; transition: border-color .15s; }
+.card:hover { border-color: var(--surface-highest); }
+.badge { align-self: flex-start; background: rgb(128 131 255 / .15); color: var(--primary); border-radius: 9999px; padding: .125rem .5rem; font-size: 10px; }
+h3 { margin: .25rem 0 0; font-size: 15px; line-height: 22px; font-weight: 600; color: var(--on-surface); }
+.school { margin: 0; display: flex; align-items: center; gap: .25rem; color: var(--on-surface-variant); font-size: 13px; line-height: 20px; }
+.school .material-symbols-outlined { font-size: 16px; color: var(--outline); }
+dl { display: grid; grid-template-columns: auto 1fr; gap: .125rem .625rem; margin: .375rem 0; font-size: 12px; line-height: 18px; }
+dt { color: var(--outline); }
+dd { margin: 0; color: var(--on-surface-variant); }
+.actions { display: flex; gap: var(--space-sm); margin-top: auto; padding-top: .375rem; }
+.actions button { flex: 1; }

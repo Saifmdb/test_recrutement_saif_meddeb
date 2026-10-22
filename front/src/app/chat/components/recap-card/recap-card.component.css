@@ -1,0 +1,10 @@
+:host { display: block; width: 100%; }
+.recap { background: var(--surface-container); border: 1px solid rgb(192 193 255 / .45); border-radius: 1rem; padding: var(--space-md) var(--space-lg); }
+h3 { margin: 0 0 .5rem; display: flex; align-items: center; gap: .5rem; font-size: 15px; font-weight: 600; color: var(--on-surface); }
+h3 .material-symbols-outlined { font-size: 20px; color: var(--primary); }
+dl { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1rem; margin: 0 0 .5rem; font-size: 14px; line-height: 22px; }
+dt { color: var(--outline); }
+dd { margin: 0; color: var(--on-surface); overflow-wrap: anywhere; }
+.note { margin: 0 0 .5rem; font-size: 12px; line-height: 18px; color: var(--outline); }
+.actions { display: flex; gap: var(--space-sm); }
+.actions button { flex: 1; }

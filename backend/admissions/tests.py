@@ -1,4 +1,4 @@
-from unittest.mock import patch
+﻿from unittest.mock import patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
@@ -120,26 +120,26 @@ class EligibilityTests(TestCase):
 
     def test_missing_level_is_asked_not_assumed(self):
         res = tools.verifier_eligibilite(self.ctx(), specialite="informatique générale", diplome="Licence")
-        self.assertEqual(res["resultats"][0]["statut"], "informations_manquantes")
+        self.assertEqual(res["eligibilite"][0]["statut"], "informations_manquantes")
         self.assertIn("NE CONCLUS PAS", res["consigne"])
 
     def test_bac_is_not_enough_for_a_licence(self):
         res = tools.verifier_eligibilite(self.ctx(), specialite="informatique générale", diplome="Licence", niveau="bac")
-        self.assertEqual(res["resultats"][0]["statut"], "criteres_non_remplis")
+        self.assertEqual(res["eligibilite"][0]["statut"], "criteres_non_remplis")
         res = tools.verifier_eligibilite(self.ctx(), specialite="informatique générale", diplome="Licence", niveau="BTS")
-        self.assertEqual(res["resultats"][0]["statut"], "criteres_remplis")
+        self.assertEqual(res["eligibilite"][0]["statut"], "criteres_remplis")
 
     def test_nationality_and_bac_type_when_restricted(self):
         ctx = self.ctx()
         res = tools.verifier_eligibilite(ctx, specialite="Ingénierie", diplome="Bachelor", niveau="bac+2")
-        self.assertEqual(res["resultats"][0]["informations_manquantes"], ["nationalité"])
+        self.assertEqual(res["eligibilite"][0]["informations_manquantes"], ["nationalité"])
         # the profile is remembered: only the nationality is given now
         res = tools.verifier_eligibilite(ctx, specialite="Ingénierie", diplome="Bachelor", nationalite="tunisienne")
-        self.assertEqual(res["resultats"][0]["statut"], "criteres_remplis")
+        self.assertEqual(res["eligibilite"][0]["statut"], "criteres_remplis")
         res = tools.verifier_eligibilite(self.ctx(), specialite="pharmacie", niveau="bac", bac="lettres")
-        self.assertEqual(res["resultats"][0]["statut"], "criteres_non_remplis")
+        self.assertEqual(res["eligibilite"][0]["statut"], "criteres_non_remplis")
         res = tools.verifier_eligibilite(self.ctx(), specialite="pharmacie", niveau="bac", bac="sciences expérimentales")
-        self.assertEqual(res["resultats"][0]["statut"], "criteres_remplis")
+        self.assertEqual(res["eligibilite"][0]["statut"], "criteres_remplis")
 
     def test_bac_science_is_a_level_not_a_specialty(self):
         ctx = self.ctx()
@@ -148,7 +148,7 @@ class EligibilityTests(TestCase):
         self.assertNotIn(self.licence.id, ids)  # requires Bac+2
         self.assertIn(self.bts.id, ids)
         self.assertEqual(ctx["state"]["profil"]["bac"], "science")
-        self.assertIn("écartées", res["consigne"])
+        self.assertIn("écartées", res.get("note", "") + res["consigne"])
 
 
 class OpenAIFormatTests(TestCase):

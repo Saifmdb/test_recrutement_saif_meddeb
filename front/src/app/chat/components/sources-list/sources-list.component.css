@@ -1,0 +1,6 @@
+:host { display: block; width: 100%; }
+summary { cursor: pointer; display: inline-flex; align-items: center; gap: .25rem; padding: 0 .25rem; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary:hover { color: var(--primary); }
+summary .material-symbols-outlined { font-size: 15px; }
+blockquote { margin: .5rem 0 0; padding: .625rem .75rem; border-left: 2px solid var(--primary-container); background: var(--surface-low); border-radius: .5rem; display: flex; flex-direction: column; gap: .25rem; white-space: pre-line; font-size: 13px; line-height: 20px; color: var(--on-surface-variant); }

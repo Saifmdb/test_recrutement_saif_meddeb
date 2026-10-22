@@ -1,0 +1,49 @@
+<aside class="sidebar">
+  <div class="top">
+    <!-- Logo & title -->
+    <div class="brand">
+      <div class="logo"><span class="material-symbols-outlined">school</span></div>
+      <span class="brand-name">Assistant Admission</span>
+      <button type="button" class="close" (click)="close.emit()" aria-label="Fermer le menu">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- New conversation -->
+    <button type="button" class="new" (click)="newConversation.emit()" [disabled]="disabled()">
+      <span class="material-symbols-outlined">add</span>
+      <span>Nouvelle discussion</span>
+    </button>
+
+    <!-- Recent conversations -->
+    <div class="recent">
+      <span class="label-sm section">Récent</span>
+      <nav>
+        @for (c of conversations(); track c.id) {
+          <button
+            type="button"
+            class="item"
+            [class.active]="c.id === currentId()"
+            [disabled]="disabled()"
+            (click)="select.emit(c.id)"
+            [attr.aria-current]="c.id === currentId() ? 'page' : null"
+          >
+            <span class="material-symbols-outlined">chat_bubble_outline</span>
+            <span class="truncate">{{ c.title }}</span>
+          </button>
+        } @empty {
+          <p class="empty">Vos discussions apparaîtront ici.</p>
+        }
+      </nav>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div class="profile">
+    <div class="avatar"><span class="material-symbols-outlined">person</span></div>
+    <div class="who">
+      <p class="name truncate">Candidat Campus</p>
+      <p class="label-sm truncate">admission&#64;edu.fr</p>
+    </div>
+  </div>
+</aside>

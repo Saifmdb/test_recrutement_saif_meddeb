@@ -1,0 +1,6 @@
+.msg { display: flex; flex-direction: column; gap: var(--space-xs); align-items: flex-start; }
+.who { padding: 0 .25rem; }
+.bubble { padding: var(--space-md); border-radius: 1rem; background: var(--surface-container); color: var(--on-surface); line-height: 1.625; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-sm); }
+.chip { background: transparent; border: 1px solid var(--surface-highest); color: var(--on-surface-variant); border-radius: 9999px; padding: .375rem .875rem; font-size: 13px; line-height: 20px; text-align: left; transition: background .15s, color .15s, border-color .15s; }
+.chip:hover { background: var(--surface-container); color: var(--primary); border-color: rgb(192 193 255 / .4); }

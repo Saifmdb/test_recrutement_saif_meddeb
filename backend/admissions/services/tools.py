@@ -244,8 +244,9 @@ def _evaluation(candidates: list[Formation], profile: dict) -> dict:
                     "Propose l'inscription.")
     else:
         consigne = ("Explique quel critère ne semble pas rempli (niveau, nationalité ou bac) en citant ce qui est "
-                    "exigé et ce que le prospect a indiqué, sans juger, puis propose d'autres formations adaptées "
-                    "à son profil ou de contacter le service des admissions.")
+                    "exigé et ce que le prospect a indiqué, sans juger. Ne cite AUCUNE autre formation de mémoire "
+                    "(tu inventerais) : propose plutôt de chercher des formations adaptées à son profil "
+                    "(rechercher_formations avec son niveau et son bac) ou de contacter le service des admissions.")
     return {"profil_prospect": profile, "eligibilite": results, "consigne": consigne}
 
 

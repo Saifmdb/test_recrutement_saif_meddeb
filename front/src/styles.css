@@ -1,0 +1,74 @@
+/* Global theme (dark "Assistant Admission" design) + elements shared by several components.
+   Component-specific styles live next to each component. */
+:root {
+  --surface: #0f131d;
+  --surface-lowest: #0a0e18;
+  --surface-low: #171b26;
+  --surface-container: #1c1f2a;
+  --surface-high: #262a35;
+  --surface-highest: #313540;
+  --on-surface: #dfe2f1;
+  --on-surface-variant: #c7c4d7;
+  --outline: #908fa0;
+  --primary: #c0c1ff;
+  --primary-hover: #e1e0ff;
+  --on-primary: #1000a9;
+  --primary-container: #8083ff;
+  --on-primary-container: #0d0096;
+  --success: #34d399;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+
+  --space-xs: .25rem;
+  --space-sm: .5rem;
+  --space-md: .875rem;
+  --space-lg: 1.25rem;
+  --space-xl: 2rem;
+
+  --font-body: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; background: var(--surface); overscroll-behavior: none; }
+::selection { background: var(--primary-container); color: var(--on-primary-container); }
+::-webkit-scrollbar { display: none; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .5; }
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  user-select: none;
+}
+
+/* Small mono label: "Assistant Admission", "Vous", "RÉCENT"... */
+.label-sm { font-family: var(--font-mono); font-size: 11px; line-height: 14px; letter-spacing: .06em; font-weight: 500; color: var(--outline); }
+
+/* Buttons used in cards and recap */
+.btn-primary { background: var(--primary); color: var(--on-primary); border: none; border-radius: .75rem; padding: .5rem .875rem; font-size: 13px; font-weight: 600; transition: background .15s; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+.btn-secondary { background: transparent; color: var(--primary); border: 1px solid var(--surface-highest); border-radius: .75rem; padding: .5rem .875rem; font-size: 13px; font-weight: 500; transition: background .15s; }
+.btn-secondary:hover:not(:disabled) { background: var(--surface-high); }
+
+/* Assistant text rendered with [innerHTML] (formatted by FormatTextPipe) */
+.rich p { margin: 0 0 .75rem; }
+.rich p:last-child, .rich ul:last-child { margin-bottom: 0; }
+.rich strong { font-weight: 600; color: var(--on-surface); }
+.rich ul { margin: 0 0 .75rem; padding-left: 1.25rem; list-style: disc; color: var(--on-surface-variant); font-size: 13px; line-height: 20px; }
+.rich li + li { margin-top: .25rem; }

@@ -1,0 +1,12 @@
+.msg { display: flex; flex-direction: column; gap: var(--space-xs); align-items: flex-start; }
+.msg.user { align-items: flex-end; max-width: 36rem; margin-left: auto; }
+.who { padding: 0 .25rem; }
+.bubble { padding: var(--space-md); border-radius: 1rem; line-height: 1.625; overflow-wrap: anywhere; max-width: 100%; }
+.rich { background: var(--surface-container); color: var(--on-surface); }
+.user-bubble { background: var(--primary); color: var(--on-primary); white-space: pre-wrap; }
+.bubble.error { background: rgb(147 0 10 / .25); color: var(--error); border: 1px solid rgb(255 180 171 / .3); }
+
+.cards { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-sm); }
+.success { display: flex; align-items: center; gap: var(--space-sm); padding: .75rem var(--space-md); border-radius: 1rem; background: rgb(52 211 153 / .1); border: 1px solid rgb(52 211 153 / .3); color: #a7f3d0; font-size: 14px; }
+.success .material-symbols-outlined { color: var(--success); font-size: 20px; }
+.success strong { color: #ecfdf5; }

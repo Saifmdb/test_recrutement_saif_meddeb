@@ -1,0 +1,37 @@
+<div class="layout">
+  <!-- 1. Left sidebar -->
+  <app-chat-sidebar
+    [conversations]="chat.conversations()"
+    [currentId]="chat.currentId()"
+    [disabled]="chat.loading()"
+    [open]="sidebarOpen()"
+    (newConversation)="newConversation()"
+    (select)="open($event)"
+    (close)="sidebarOpen.set(false)"
+  />
+  @if (sidebarOpen()) {
+    <div class="backdrop" (click)="sidebarOpen.set(false)"></div>
+  }
+
+  <!-- 2. Conversation area -->
+  <div class="main">
+    <app-chat-header [title]="chat.currentTitle()" (menu)="sidebarOpen.set(true)" />
+
+    <div class="scroller" #scroller>
+      <main class="thread">
+        <app-welcome-message [showSuggestions]="chat.messages().length === 0" (pick)="send($event)" />
+
+        @for (m of chat.messages(); track $index) {
+          <app-message [message]="m" [isLast]="$last" [disabled]="chat.loading()" (send)="send($event)" />
+        }
+
+        @if (chat.loading()) {
+          <app-typing-indicator />
+        }
+      </main>
+    </div>
+
+    <!-- 3. Input bar -->
+    <app-chat-input [disabled]="chat.loading()" (send)="send($event)" />
+  </div>
+</div>

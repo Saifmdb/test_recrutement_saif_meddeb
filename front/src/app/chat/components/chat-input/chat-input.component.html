@@ -1,0 +1,17 @@
+<div class="footer">
+  <form class="composer" (submit)="$event.preventDefault(); submit()">
+    <input
+      type="text"
+      placeholder="Posez votre question..."
+      name="draft"
+      maxlength="2000"
+      autocomplete="off"
+      aria-label="Votre message"
+      [ngModel]="draft()"
+      (ngModelChange)="draft.set($event)"
+    />
+    <button type="submit" class="send" title="Envoyer" aria-label="Envoyer" [disabled]="!draft().trim() || disabled()">
+      <span class="material-symbols-outlined">arrow_upward</span>
+    </button>
+  </form>
+</div>
