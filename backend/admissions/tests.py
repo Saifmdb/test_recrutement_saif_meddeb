@@ -84,8 +84,14 @@ class RegistrationRulesTests(TestCase):
         self.assertTrue(tools.preparer_inscription(self.ctx, **self.data)["ok"])
         self.assertFalse(tools.confirmer_inscription(self.ctx)["ok"])
         self.assertEqual(Candidature.objects.count(), 0)
-        # next turn: the prospect confirmed
+        # next turn: the prospect asks for a change -> the model calling the tool anyway is refused
         self.ctx["state"]["tour"] = 2
+        for answer in ("Attendez, mon numéro est faux", "Oui mais je veux changer d'école", "Merci"):
+            self.ctx["user_text"] = answer
+            self.assertFalse(tools.confirmer_inscription(self.ctx)["ok"], answer)
+        self.assertEqual(Candidature.objects.count(), 0)
+        # the prospect confirmed explicitly
+        self.ctx["user_text"] = "Oui, je confirme"
         res = tools.confirmer_inscription(self.ctx)
         self.assertTrue(res["ok"])
         c = Candidature.objects.get()
@@ -136,8 +142,17 @@ class EligibilityTests(TestCase):
         # the profile is remembered: only the nationality is given now
         res = tools.verifier_eligibilite(ctx, specialite="Ingénierie", diplome="Bachelor", nationalite="tunisienne")
         self.assertEqual(res["eligibilite"][0]["statut"], "criteres_remplis")
-        res = tools.verifier_eligibilite(self.ctx(), specialite="pharmacie", niveau="bac", bac="lettres")
+        # level already too low: say so instead of asking for the nationality
+        res = tools.verifier_eligibilite(self.ctx(), specialite="Ingénierie", diplome="Bachelor", niveau="bac")
         self.assertEqual(res["eligibilite"][0]["statut"], "criteres_non_remplis")
+        self.assertNotIn("NE CONCLUS PAS", res["consigne"])
+        ctx = self.ctx()
+        res = tools.verifier_eligibilite(ctx, specialite="pharmacie", bac="lettres")
+        self.assertEqual(res["eligibilite"][0]["statut"], "criteres_non_remplis")
+        # the refused formation is replaced by accessible ones (bac level assumed, Licence/Bachelor need Bac+2)
+        ids = [c["id"] for c in ctx["cards"]]
+        self.assertEqual(ids, [self.bts.id])
+        self.assertEqual(len(res["alternatives"]), 1)
         res = tools.verifier_eligibilite(self.ctx(), specialite="pharmacie", niveau="bac", bac="sciences expérimentales")
         self.assertEqual(res["eligibilite"][0]["statut"], "criteres_remplis")
 
@@ -150,23 +165,27 @@ class EligibilityTests(TestCase):
         self.assertEqual(ctx["state"]["profil"]["bac"], "science")
         self.assertIn("écartées", res.get("note", "") + res["consigne"])
 
+    def test_formations_for_the_prospect_bac_section_come_first(self):
+        # "bac science" is vague: formations requiring a science bac come first, nothing is excluded
+        ctx = self.ctx()
+        tools.rechercher_formations(ctx, niveau="bac", bac="science")
+        ids = [c["id"] for c in ctx["cards"]]
+        self.assertEqual(ids[0], self.pharma.id)
+        self.assertIn(self.bts.id, ids)
+        # a known section excludes formations reserved to other sections
+        ctx = self.ctx()
+        tools.rechercher_formations(ctx, niveau="bac", bac="lettres")
+        ids = [c["id"] for c in ctx["cards"]]
+        self.assertNotIn(self.pharma.id, ids)
+        self.assertIn(self.bts.id, ids)
 
-class OpenAIFormatTests(TestCase):
-    """History in Ollama format is converted to the OpenAI/Groq format (ids, JSON string arguments)."""
-
-    def test_tool_calls_are_paired_with_results(self):
-        from .services.llm import _to_openai
-
-        out = _to_openai([
-            {"role": "user", "content": "informatique ?"},
-            {"role": "assistant", "content": "", "tool_calls": [
-                {"function": {"name": "rechercher_formations", "arguments": {"specialite": "informatique"}}}]},
-            {"role": "tool", "tool_name": "rechercher_formations", "content": "{}"},
-        ])
-        call = out[1]["tool_calls"][0]
-        self.assertEqual(call["function"]["arguments"], '{"specialite": "informatique"}')
-        self.assertEqual(out[2]["tool_call_id"], call["id"])
-        self.assertNotIn("tool_name", out[2])
+    def test_bac_informatique_shows_it_formations_first(self):
+        commerce = make_formation("Brevet de Technicien Supérieur", "Commerce international", "IMSET SFAX")
+        ctx = self.ctx()
+        tools.rechercher_formations(ctx, niveau="bac", bac="informatique")
+        ids = [c["id"] for c in ctx["cards"]]
+        self.assertEqual(ids[0], self.bts.id)  # Réseaux et sécurité informatiques
+        self.assertIn(commerce.id, ids)  # ranked, not excluded
 
 
 class GuaranteeGuardrailTests(TestCase):

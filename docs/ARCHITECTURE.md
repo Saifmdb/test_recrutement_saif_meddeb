@@ -9,7 +9,7 @@
 │  - cartes formations │  texte + cartes +   │  ChatView ──► agent.run()                     │
 │  - récapitulatif     │  récap + sources    │                 │                             │
 └──────────────────────┘                     │                 ▼                             │
-                                             │  LLM Groq / Ollama (prompt système = règles)  │
+                                             │  LLM Ollama gemma4:e4b (prompt = règles)      │
                                              │                 │ appels d'outils             │
                                              │   ┌─────────────┼──────────────┬───────────┐  │
                                              │   ▼             ▼              ▼           ▼  │
@@ -24,20 +24,16 @@
 
 ## 2. Choix techniques
 
-### LLM : appel d'outils, fournisseur interchangeable
+### LLM : Gemma 4 E4B en local (Ollama), appel d'outils
 - Le comportement est décrit dans un **prompt système** (`services/agent.py`) qui reprend les règles du sujet :
   réponses fondées sur le document uniquement, ne pas confondre recherche et éligibilité, confirmation explicite,
   pas de doublon, ne jamais garantir l'admission.
 - Le modèle choisit lui-même l'outil à appeler (pas de détection par mots-clés).
-- `services/llm.py` parle à deux types de fournisseurs, choisis par `LLM_PROVIDER` :
-  - **Groq** (ou toute API compatible OpenAI) avec `openai/gpt-oss-120b` : réponses en 2 à 5 s, appel d'outils
-    fiable. Le plan gratuit limite les jetons par minute : le client attend le délai indiqué (HTTP 429) puis réessaie,
-    et les résultats d'outils des tours précédents sont abrégés pour consommer moins de jetons.
-  - **Ollama** en local (`qwen3:4b`, mode « réflexion » désactivé) : aucune donnée ne sort de la machine.
-- **Choix mesuré pendant le développement** (GTX 1650, 4 Go de VRAM, 8 Go de RAM) :
-  - `qwen2.5:3b` : rapide, mais appel d'outils peu fiable (il réutilise d'anciens résultats ou invente des formations) ;
-  - `qwen2.5:7b` et `qwen3:4b` (contexte 8k) ne tiennent pas entièrement en VRAM : plus d'une minute par réponse ;
-  - d'où Groq par défaut, le mode local restant disponible sur une machine mieux équipée.
+- `services/llm.py` appelle **Ollama** en local avec **Gemma 4 E4B** (`gemma4:e4b`, mode « réflexion » désactivé) :
+  appel d'outils natif, bon français, et aucune donnée ne sort de la machine. Les embeddings du RAG utilisent
+  `nomic-embed-text`, aussi via Ollama.
+- Les résultats d'outils des tours précédents sont abrégés dans l'historique envoyé au modèle : moins de jetons,
+  réponses plus rapides.
 
 ### Outils exposés au modèle (`services/tools.py`)
 | Outil | Rôle |
@@ -62,7 +58,9 @@ Le LLM pilote le dialogue, mais les règles critiques sont vérifiées par le co
   « vous semblez remplir les critères » et le rappel « La décision finale appartient à l'équipe admissions » est ajouté.
 - **Données valides** : e-mail (validateur Django), téléphone normalisé (8 chiffres tunisiens → `+216…`, ou international), nom/prénom.
 - **Confirmation explicite** : `confirmer_inscription` n'enregistre que si un récapitulatif a été préparé lors d'un
-  tour **précédent** ; le prospect a donc forcément vu le récapitulatif et répondu.
+  tour **précédent** ; le prospect a donc forcément vu le récapitulatif et répondu. Son message doit en plus être
+  une confirmation explicite (« oui », « je confirme »…) sans demande de modification (« non », « faux »,
+  « changer »…) : vérifié par le code, même si le modèle appelle l'outil à tort.
 - **Doublons** : vérifiés avant le récapitulatif, au moment de l'enregistrement, et garantis par des contraintes
   `unique` en base sur l'e-mail et le téléphone normalisé.
 
@@ -125,9 +123,9 @@ src/app/
 
 ## 4. Limites
 
-- **Dépendance au fournisseur LLM** : en mode Groq, les messages des prospects transitent par une API externe, et le
-  plan gratuit limite les jetons par minute (attente de quelques secondes si plusieurs messages s'enchaînent).
-- **Mode local** : un LLM de 4 à 7 milliards de paramètres demande un GPU d'au moins ~6 Go de VRAM pour répondre vite.
+- **Matériel** : Gemma 4 E4B tourne en local ; avec moins de ~8 Go de VRAM, une partie du modèle passe sur le CPU
+  et les réponses sont nettement plus lentes. Un petit modèle peut aussi se tromper d'outil : les règles critiques
+  restent vérifiées par le code (voir garde-fous).
 - **Éligibilité** : le pré-contrôle repose sur les critères du fichier Excel ; « dans le même secteur » (CAP/BTP) n'est
   pas vérifiable automatiquement. Il reste indicatif : la décision appartient à l'équipe admissions.
 - Données Excel hétérogènes (ex. certains BTS d'IMSET SOUSSE avec le niveau « 2ème année » ; doublons

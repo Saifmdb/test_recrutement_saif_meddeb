@@ -5,6 +5,8 @@ that must never depend on the model: existing formation, valid contact details, 
 and no registration without a recap shown first and confirmed in a later message.
 """
 
+import re
+
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
@@ -14,6 +16,7 @@ from .text import normalize, stem, tokens
 from .validators import clean_email, clean_name, normalize_phone
 
 MAX_RESULTS = 8
+FINAL_DECISION = "La décision finale appartient à l'équipe admissions."
 
 DIPLOMA_ALIASES = {
     "bts": "technicien superieur",
@@ -211,8 +214,28 @@ def _formation_line(f: Formation) -> str:
 
 
 # Words that describe the prospect's bac section, not a specialty ("j'ai un bac science")
+BAC_DOMAINS = {"informatique": "informatique", "economie_gestion": "gestion"}
 BAC_SECTION_WORDS = {"science", "sciences", "scientifique", "math", "maths", "mathematique", "mathematiques",
                      "experimentale", "experimentales", "lettre", "lettres", "technique", "techniques", "sport"}
+
+
+def _prospect_bac_sections(bac: str) -> tuple[set[str], bool]:
+    """Bac sections of the prospect, and whether they are certain. A vague "bac science" may be
+    sciences expérimentales or techniques: good enough to rank, not to exclude."""
+    sections = set(eligibility.bac_sections(bac))
+    if sections:
+        return sections, True
+    if "scien" in normalize(bac):
+        return {"sciences_experimentales", "sciences_techniques"}, False
+    return set(), False
+
+
+def _bac_match(formation, sections: set[str]) -> int:
+    """0 = requires the prospect's bac section (most relevant), 1 = open to all sections, 2 = other section."""
+    req = normalize(formation.bac_requis)
+    if req in ("", "all") or "san" in req:
+        return 1
+    return 0 if sections & set(eligibility.bac_sections(formation.bac_requis)) else 2
 
 
 def _remember_profile(ctx, **values) -> dict:
@@ -235,6 +258,9 @@ def _evaluation(candidates: list[Formation], profile: dict) -> dict:
             if m not in missing:
                 missing.append(m)
     statuses = {r["statut"] for r in results}
+    if statuses == {"criteres_non_remplis"}:
+        # A known criterion already fails for every candidate: asking for more information is pointless
+        missing = []
     if missing:
         consigne = ("NE CONCLUS PAS sur l'éligibilité : il manque des informations. Pose au prospect les questions "
                     "suivantes : " + " ; ".join(QUESTION_FOR.get(m, m) for m in missing) + ".")
@@ -277,6 +303,30 @@ def rechercher_formations(ctx, specialite: str = "", diplome: str = "", ecole: s
         if excluded:
             note += (f"{excluded} formation(s) exigeant un niveau supérieur à « {profile['niveau']} » ont été "
                      "écartées. ")
+    # Refine with the prospect's bac: formations made for their section first, then those open to all
+    sections, certain = _prospect_bac_sections(profile.get("bac", ""))
+    if sections and found:
+        if certain:
+            kept = [f for f in found if _bac_match(f, sections) < 2]
+            if len(kept) < len(found):
+                note += (f"{len(found) - len(kept)} formation(s) réservée(s) à une autre section du bac ont été "
+                         "écartées. ")
+            found = kept
+        found = sorted(found, key=lambda f: _bac_match(f, sections))  # stable: keeps the level order
+        specific = sum(1 for f in found if _bac_match(f, sections) == 0)
+        if specific:
+            note += (f"Les {specific} premières formations exigent spécifiquement la section du bac du prospect : "
+                     "cite leurs domaines en priorité. ")
+        # "J'ai un bac informatique, quelles spécialités me correspondent ?": no domain asked, the bac section
+        # gives one -> formations of that domain first (nothing excluded)
+        domain = next((BAC_DOMAINS[s] for s in sections if s in BAC_DOMAINS), "") if not specialite else ""
+        if domain:
+            groups = _keywords(domain)
+            in_domain = [any(k in normalize(f.specialite) for g in groups for k in g) for f in found]
+            if any(in_domain):
+                found = [f for f, ok in zip(found, in_domain) if ok] + [f for f, ok in zip(found, in_domain) if not ok]
+                note += (f"Les {sum(in_domain)} premières formations relèvent du domaine du bac du prospect "
+                         f"({domain}) : présente-les en priorité. ")
     shown = found[:MAX_RESULTS]
     ctx["cards"] = [_formation_dict(f) for f in shown]
     if not found:
@@ -317,8 +367,54 @@ def verifier_eligibilite(ctx, specialite: str = "", diplome: str = "", ecole: st
                 "consigne": "Plusieurs formations correspondent (affichées en cartes) : demande au prospect "
                             "laquelle l'intéresse (diplôme, école) avant de vérifier l'éligibilité."}
 
-    ctx["cards"] = [_formation_dict(f) for f in candidates]
-    return _evaluation(candidates, profile)
+    result = _evaluation(candidates, profile)
+    if {r["statut"] for r in result["eligibilite"]} != {"criteres_non_remplis"}:
+        ctx["cards"] = [_formation_dict(f) for f in candidates]
+        return result
+
+    # Not accessible: show formations the prospect can aim for instead of the refused one
+    alternatives = _alternatives(candidates, profile)
+    ctx["cards"] = [_formation_dict(f) for f in alternatives]
+    if alternatives:
+        result["alternatives"] = [_formation_line(f) for f in alternatives]
+        result["consigne"] = (
+            "Explique en une phrase quel critère n'est pas rempli (exigé / indiqué par le prospect), sans juger. "
+            f"Les {len(alternatives)} formations de la liste « alternatives » sont DÉJÀ affichées en cartes à la place "
+            "de la formation demandée : cite 2 ou 3 de leurs spécialités comme pistes (sans recopier la liste), "
+            "propose de vérifier son éligibilité à l'une d'elles, et termine par cette phrase exacte : "
+            f"« {FINAL_DECISION} »"
+        )
+    return result
+
+
+def _domain_keywords(formations: list[Formation]) -> list[str]:
+    """Keywords of the domains the formations belong to ("Préparateur en Pharmacie" -> santé)."""
+    specs = [normalize(f.specialite) for f in formations]
+    return [k for words in SYNONYMS.values() if any(w in s for w in words for s in specs) for k in words]
+
+
+def _alternatives(refused: list[Formation], profile: dict) -> list[Formation]:
+    """Formations whose known criteria do not exclude the prospect: same domain first, criteria met first,
+    one card per specialty."""
+    domain = _domain_keywords(refused)
+    if profile.get("bac") and not profile.get("niveau"):
+        # "je suis bac lettres": a bac section means the prospect holds the bac -> suggest what a bac gives access to
+        profile = {**profile, "niveau": "bac"}
+    scored = []
+    for f in Formation.objects.exclude(id__in=[f.id for f in refused]):
+        statut = eligibility.evaluate(f, profile)["statut"]
+        if statut == "criteres_non_remplis":
+            continue
+        in_domain = any(k in normalize(f.specialite) for k in domain)
+        scored.append(((not in_domain, statut != "criteres_remplis", -eligibility.required_level(f.niveau_requis)), f))
+    scored.sort(key=lambda s: s[0])
+    out, seen = [], set()
+    for _, f in scored:
+        key = normalize(f.specialite)
+        if key not in seen:
+            seen.add(key)
+            out.append(f)
+    return out[:MAX_RESULTS]
 
 
 def _duplicate(email: str, phone: str) -> Candidature | None:
@@ -367,6 +463,18 @@ def preparer_inscription(ctx, prenom="", nom="", email="", telephone="", special
             "consigne": "Le récapitulatif est affiché. Demande au prospect de confirmer explicitement. N'enregistre rien avant."}
 
 
+_CONFIRM_RE = re.compile(r"\b(oui|ok|okay|d accord|je confirme|confirme|confirmer|valide|valider|parfait|c est bon|"
+                         r"tout est (bon|correct)|exact|correct|yes)\b")
+_REFUSE_RE = re.compile(r"\b(non|pas|attend|attendez|modifier|modifie|changer|change|corriger|faux|fausse|erreur|"
+                        r"annule|annuler)\b")
+
+
+def is_explicit_confirmation(text: str) -> bool:
+    """The prospect's own message must confirm, without asking for a change ("oui mais l'e-mail est faux")."""
+    t = normalize(text)
+    return bool(_CONFIRM_RE.search(t)) and not _REFUSE_RE.search(t)
+
+
 def confirmer_inscription(ctx) -> dict:
     state = ctx["state"]
     pending = state.get("inscription_en_attente")
@@ -375,6 +483,10 @@ def confirmer_inscription(ctx) -> dict:
     if pending["tour"] >= state["tour"]:
         # The recap must have been shown to the prospect and confirmed in a LATER message
         return {"ok": False, "erreur": "Le prospect n'a pas encore vu le récapitulatif : attends sa confirmation explicite."}
+    if not is_explicit_confirmation(ctx.get("user_text", "")):
+        # Checked in code: the model must not register on an ambiguous answer or a correction request
+        return {"ok": False, "erreur": "Le dernier message du prospect n'est pas une confirmation explicite. N'enregistre "
+                                       "rien : demande-lui de confirmer le récapitulatif ou de préciser la modification."}
     try:
         with transaction.atomic():
             if _duplicate(pending["email"], pending["telephone"]):
@@ -396,19 +508,6 @@ def confirmer_inscription(ctx) -> dict:
     return {"ok": True, "reference": c.reference, "statut": c.statut, "equipe_notifiee": sent,
             "consigne": "Confirme l'enregistrement au prospect avec la référence, et rappelle que l'admission "
                         "n'est pas garantie : la décision appartient à l'équipe admissions."}
-
-
-def _allow_null_optionals(schemas: list[dict]) -> None:
-    """Models often send null for an optional parameter; strict APIs (Groq) reject it unless allowed."""
-    for schema in schemas:
-        params = schema["function"]["parameters"]
-        required = set(params.get("required", []))
-        for name, prop in params.get("properties", {}).items():
-            if name not in required and prop.get("type") == "string":
-                prop["type"] = ["string", "null"]
-
-
-_allow_null_optionals(SCHEMAS)
 
 
 FUNCTIONS = {

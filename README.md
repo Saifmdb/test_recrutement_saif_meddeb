@@ -11,7 +11,7 @@ Assistant conversationnel qui permet à un prospect de :
 |---|---|
 | Frontend | Angular 21 (standalone components, signals) |
 | Backend | Django 5.2 + Django REST Framework, SQLite |
-| LLM | **Groq — `openai/gpt-oss-120b`** (appel d'outils / *tool calling*), ou **Ollama — `qwen3:4b`** en 100 % local |
+| LLM | **Ollama — `gemma4:e4b`** (Gemma 4 E4B, appel d'outils / *tool calling*), 100 % local |
 | Embeddings / base vectorielle | Ollama `nomic-embed-text`, vecteurs stockés en base + similarité cosinus (NumPy) |
 
 La documentation technique (architecture, choix, limites) est dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -22,19 +22,14 @@ La documentation technique (architecture, choix, limites) est dans [docs/ARCHITE
 
 - Python 3.11+
 - Node.js 20+ et npm
-- [Ollama](https://ollama.com) installé et lancé (embeddings du RAG, et chat si mode local)
-- Une clé API **Groq** gratuite : https://console.groq.com/keys (mode par défaut)
+- [Ollama](https://ollama.com) installé et lancé (chat + embeddings du RAG)
 
 ```bash
-ollama pull nomic-embed-text    # toujours nécessaire (recherche dans le document)
-ollama pull qwen3:4b            # uniquement pour le mode 100 % local
+ollama pull gemma4:e4b          # modèle de chat (Gemma 4 E4B, appel d'outils)
+ollama pull nomic-embed-text    # embeddings (recherche dans le document)
 ```
 
-**Choix du LLM** (dans `backend/.env`) :
-- **Groq (défaut)** : `LLM_PROVIDER=openai` + `LLM_API_KEY=gsk_...`. Réponses en 2 à 5 s sur n'importe quel PC.
-  Le plan gratuit limite les jetons par minute : en cas de dépassement, le backend attend et réessaie automatiquement.
-- **Ollama local** : `LLM_PROVIDER=ollama`, `LLM_CHAT_MODEL=qwen3:4b`, `LLM_THINK=false`. Demande un GPU
-  avec au moins ~6 Go de VRAM pour des réponses rapides.
+**LLM** (dans `backend/.env`) : `LLM_CHAT_MODEL=gemma4:e4b`, `LLM_THINK=false`. Aucune donnée ne sort de la machine.
 
 ## 2. Backend (Django REST)
 
@@ -67,13 +62,11 @@ npm start                           # http://localhost:4200  (proxy /api -> http
 
 | Variable | Rôle | Défaut |
 |---|---|---|
-| `LLM_PROVIDER` | `openai` (Groq ou toute API compatible OpenAI) ou `ollama` (local) | `ollama` |
-| `LLM_API_URL` / `LLM_API_KEY` | URL et clé de l'API (mode `openai`) | Groq / — |
-| `LLM_CHAT_MODEL` | Modèle du chat | `qwen3:4b` (`.env.example` : `openai/gpt-oss-120b`) |
-| `LLM_REASONING_EFFORT` | Effort de raisonnement des modèles gpt-oss (`low` = plus rapide) | — |
-| `LLM_THINK` | Mode « réflexion » de qwen3 sur Ollama (`false` = plus rapide) | `false` |
+| `LLM_CHAT_MODEL` | Modèle du chat | `gemma4:e4b` |
+| `LLM_THINK` | Mode « réflexion » de Gemma 4 (`false` = plus rapide) | `false` |
+| `OLLAMA_URL` | Adresse du serveur Ollama | `http://localhost:11434` |
 | `LLM_EMBED_MODEL` | Modèle d'embeddings (Ollama) | `nomic-embed-text` |
-| `LLM_NUM_CTX` | Fenêtre de contexte (Ollama) | `4096` |
+| `LLM_NUM_CTX` | Fenêtre de contexte (Ollama) | `8192` |
 | `ADMISSIONS_CONTACT_EMAIL` / `_PHONE` | Contact donné quand une réponse est introuvable | — |
 | `ADMISSIONS_TEAM_EMAILS` | Destinataires de la notification (séparés par des virgules) | — |
 | `EMAIL_MODE` | `file` (e-mails écrits dans `backend/sent_emails/`), `console` ou `smtp` | `file` |

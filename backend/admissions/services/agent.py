@@ -1,4 +1,4 @@
-"""Conversational agent: Ollama (qwen3:4b) + tool calling.
+"""Conversational agent: Ollama (Gemma 4 E4B) + tool calling.
 
 The system prompt contains the business rules of the subject; the model decides what to do and
 calls the tools (tools.py) to read the document, query the catalogue and register the request.
@@ -24,7 +24,22 @@ def _catalogue_overview() -> str:
     return f"Écoles : {', '.join(ecoles)}.\nDiplômes : {', '.join(diplomes)}."
 
 
-SYSTEM_PROMPT = """Tu es l'assistant des admissions des écoles IMSET. Tu aides les prospects à :
+# Gemma 4 E4B (thinking off) follows the rules at the top of the prompt best: the tool routing comes first,
+# otherwise it asks "which procedure / which formation?" instead of calling the tool.
+SYSTEM_PROMPT = """=== RÈGLE N°1 : APPELLE L'OUTIL D'ABORD ===
+Ne pose JAMAIS de question avant d'avoir appelé l'outil qui correspond au message :
+- documents / pièces à fournir, étapes, conditions, dates, frais, délais, candidature → rechercher_procedure
+- domaine, spécialité, diplôme, école, « quelles formations » → rechercher_formations
+- « suis-je éligible », « est-ce que je peux faire... » → verifier_eligibilite
+- s'inscrire → collecte les informations, puis preparer_inscription
+Tu poses tes questions APRÈS avoir lu le résultat de l'outil. Seules les salutations et les messages hors sujet
+se passent d'outil. N'écris jamais ton raisonnement.
+Il existe UNE SEULE procédure d'admission, commune à toutes les écoles et formations, décrite dans le document
+officiel. Pour toute question sur les documents à fournir, les étapes, les dates limites, les frais ou les
+conditions, appelle IMMÉDIATEMENT rechercher_procedure(question=<message du prospect>) : ne demande jamais de
+quelle procédure, formation ou école il s'agit.
+
+Tu es l'assistant des admissions des écoles IMSET. Tu aides les prospects à :
 1) obtenir des informations sur la procédure d'admission ;
 2) trouver une formation et vérifier leur éligibilité ;
 3) déposer une demande d'inscription.
@@ -131,9 +146,6 @@ def system_prompt(profile: dict | None = None) -> str:
         known = ", ".join(f"{k} : {v}" for k, v in profile.items())
         prompt += (f"\n\nPROFIL DÉJÀ DONNÉ PAR LE PROSPECT (ne le redemande pas, réutilise-le dans les outils) : "
                    f"{known}.")
-    if settings.LLM_PROVIDER == "ollama" and settings.LLM_THINK is False:
-        # qwen3 soft switch: answer directly, without writing its reasoning
-        prompt = "/no_think\n" + prompt + "\nRéponds directement au prospect, sans écrire ton raisonnement."
     return prompt
 
 
@@ -191,7 +203,7 @@ OLD_TOOL_RESULT_CHARS = 400
 
 def _for_llm(history: list[dict]) -> list[dict]:
     """Shorten tool results of previous turns (only the current turn needs them in full): fewer tokens,
-    faster answers, and it stays under the tokens-per-minute limit of free API plans."""
+    faster answers on a local model."""
     last_user = max((i for i, m in enumerate(history) if m["role"] == "user"), default=0)
     out = []
     for i, m in enumerate(history):
@@ -223,8 +235,8 @@ def run(conversation, user_text: str) -> dict:
     start = len(history)
     history.append({"role": "user", "content": user_text})
 
-    ctx = {"state": state, "conversation_id": str(conversation.id), "cards": [], "recap": None,
-           "sources": [], "confirmation": None}
+    ctx = {"state": state, "conversation_id": str(conversation.id), "user_text": user_text, "cards": [],
+           "recap": None, "sources": [], "confirmation": None}
     text = ""
     try:
         for _ in range(MAX_TOOL_ROUNDS):

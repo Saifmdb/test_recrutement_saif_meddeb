@@ -97,19 +97,13 @@ REST_FRAMEWORK = {
 }
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:4200")
 
-# --- LLM ---------------------------------------------------------------------
-# "ollama" (local) or "openai" (any OpenAI-compatible API: Groq, OpenAI, Mistral...)
-LLM_PROVIDER = env("LLM_PROVIDER", "ollama").strip().lower()
-LLM_API_URL = env("LLM_API_URL", "https://api.groq.com/openai/v1").rstrip("/")
-LLM_API_KEY = env("LLM_API_KEY", "")
-# Reasoning models via API (e.g. gpt-oss on Groq): "low" = faster, shorter answers. Empty = not sent.
-LLM_REASONING_EFFORT = env("LLM_REASONING_EFFORT", "").strip()
+# --- LLM (Ollama, 100 % local) ------------------------------------------------
 OLLAMA_URL = env("OLLAMA_URL", "http://localhost:11434").rstrip("/")
-LLM_CHAT_MODEL = env("LLM_CHAT_MODEL", "qwen3:4b")
-# Reasoning mode of "thinking" models (qwen3): False = faster answers. Empty = not sent (models without it).
+LLM_CHAT_MODEL = env("LLM_CHAT_MODEL", "gemma4:e4b")
+# Gemma 4 "thinking" mode: False = faster answers. Empty = not sent (models without it).
 LLM_THINK = {"true": True, "false": False}.get(env("LLM_THINK", "false").strip().lower())
 LLM_EMBED_MODEL = env("LLM_EMBED_MODEL", "nomic-embed-text")
-LLM_NUM_CTX = int(env("LLM_NUM_CTX", "4096"))  # 4096 keeps qwen3:4b entirely in 4 GB of VRAM
+LLM_NUM_CTX = int(env("LLM_NUM_CTX", "8192"))  # system prompt + tool schemas alone take ~3k tokens
 LLM_TIMEOUT = float(env("LLM_TIMEOUT", "300"))
 
 # --- RAG ---------------------------------------------------------------------
